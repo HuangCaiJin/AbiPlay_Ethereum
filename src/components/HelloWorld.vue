@@ -279,47 +279,7 @@ export default {
         this.swichParam()
         // this.swichParam()
       },
-      switchGas(fn){
-        
-        console.log(this.ContractObj.methods[this.curMethod.name](this.param[0],this.param[1]))
-        switch(this.param.length){
-          case 0:
-            this.ContractObj.methods[this.curMethod.name]().estimateGas({from:this.address})
-            .then((gasAmount)=>{
-              this.gas = gasAmount
-              console.log('gas:'+this.gas)
-              fn()
-            })
-            .catch(function(error){
-              console.log(error)
-            });
-          break;
-          case 1:
-            this.ContractObj.methods[this.curMethod.name](this.param[0]).estimateGas({from:this.address})
-            .then((gasAmount)=>{
-              this.gas = gasAmount
-              console.log('gas:'+this.gas)
-              fn()
-            })
-            .catch(function(error){
-              console.log(error)
-            });
-          break;
-          case 2:
-            this.ContractObj.methods[this.curMethod.name](this.param[0],this.param[1]).estimateGas({from:this.address})
-            .then((gasAmount)=>{
-              this.gas = gasAmount
-              console.log('gas:'+this.gas)
-              fn()
-            })
-            .catch(function(error){
-              console.log(error)
-            });
-          break;
-        }
-        
-        
-      },
+      
       swichParam(fn = ()=>{}){
         let temp = []
         this.param.forEach(item=>{
@@ -348,13 +308,37 @@ export default {
         })
 
         if(this.type == 'send'){
-          this.ContractObj.methods[this.curMethod.name](...temp).send({
+          this.ContractObj.methods[this.curMethod.name](...temp).estimateGas({
             from:this.address,
             value:this.payAmount
-          }).then(data=>{
-             this.result = data
-             console.log(data)
+          }).then(gas=>{
+             console.log(`gaslimit:${gas}`)
+             this.ContractObj.methods[this.curMethod.name](...temp).send({
+               from:this.address,
+               value:this.payAmount
+             }).then(data=>{
+               this.result = data
+               console.log(data)
+             })
+          }).catch(err=>{
+            console.log(err)
+            this.$confirm(`是否继续交易?`, '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'warning'
+            }).then(() => {
+              this.ContractObj.methods[this.curMethod.name](...temp).send({
+                from:this.address,
+                value:this.payAmount
+              }).then(data=>{
+                this.result = data
+                console.log(data)
+              })
+            }).catch(() => {
+                    
+            });
           })
+          
         }else{
           this.ContractObj.methods[this.curMethod.name](...temp).call().then(data=>{
              this.result = data
